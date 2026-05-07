@@ -44,6 +44,7 @@ parking_lot_server/
 │       ├── api_key.py          # API Key 검증 → ParkingLot 반환
 │       └── jwt_auth.py         # JWT 검증 → user 페이로드 반환
 ├── alembic/
+├── docker-compose.yml          # PostgreSQL 컨테이너
 ├── .env
 └── requirements.txt
 ```
@@ -53,6 +54,7 @@ parking_lot_server/
 ```
 fastapi, uvicorn[standard]          # 웹 서버
 sqlalchemy[asyncio], asyncpg        # 비동기 PostgreSQL
+psycopg2-binary                     # Alembic 마이그레이션용 동기 드라이버
 alembic                             # DB 마이그레이션
 pydantic-settings                   # 환경변수 관리
 python-jose[cryptography]           # JWT
@@ -70,10 +72,38 @@ cryptography                        # AES-256-GCM
 
 환경변수, DB 연결, 라우터 마운트 구성. 특별한 로직은 없고 이후 모든 단계의 기반이 된다.
 
-`main.py`에서 `MODE` 값에 따라 `public/` 라우터 마운트 여부를 분기하는 구조를 미리 잡아둔다.
+**Docker로 PostgreSQL 실행**
+
+별도 PostgreSQL 설치 없이 Docker로 개발용 DB를 띄운다.
+
+```yaml
+# docker-compose.yml
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: openpark
+      POSTGRES_USER: openpark
+      POSTGRES_PASSWORD: openpark
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+```bash
+docker compose up -d   # DB 시작
+docker compose down    # DB 종료 (데이터 유지)
+```
+
+`DATABASE_URL`은 위 설정 기준으로 `postgresql+asyncpg://openpark:openpark@localhost/openpark`.
+
+**`main.py`에서 `MODE` 분기 구조를 미리 잡아둔다.**
 
 ```python
-# main.py
 if settings.mode == "public":
     app.include_router(public_status.router, prefix="/public")
 ```
