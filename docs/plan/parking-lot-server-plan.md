@@ -60,7 +60,54 @@ pydantic-settings                   # 환경변수 관리
 python-jose[cryptography]           # JWT
 passlib[bcrypt]                     # 비밀번호 해시
 cryptography                        # AES-256-GCM
+
+# 테스트
+pytest, pytest-asyncio, pytest-cov  # 테스트 실행 및 커버리지
+httpx                               # FastAPI 엔드포인트 테스트용 HTTP 클라이언트
 ```
+
+---
+
+## 테스트 전략
+
+### 원칙
+
+각 단계 구현 후 반드시 해당 단계의 테스트를 작성하고 통과한 뒤에 다음 단계로 진행한다.  
+최종적으로 `POST /api/v1/plates` 엔드포인트까지 완성되면 통합 테스트로 전체 흐름을 검증한다.
+
+### 환경
+
+- `.venv` 가상환경으로 패키지 통일
+- Docker PostgreSQL을 테스트 DB로 사용
+- 각 테스트는 트랜잭션 롤백으로 DB를 오염시키지 않음
+- CI/CD: 커버리지 기준 미달 시 실패 처리 (`--cov-fail-under`, 단계별로 기준 상향)
+
+### 테스트 구조
+
+```
+tests/
+├── conftest.py              # 공용 픽스처 (DB 세션 등)
+├── test_config.py           # 1단계: 환경변수 검증
+├── models/
+│   └── test_models.py       # 2단계: 모델 구조 및 DB 제약 조건
+├── services/
+│   ├── test_crypto.py       # 3단계: 암호화 함수
+│   └── test_fee.py          # 4단계: 요금 계산 로직
+├── routers/
+│   ├── test_plates.py       # 5단계: 입출차 엔드포인트
+│   ├── test_auth.py         # 6단계: 관리자 로그인
+│   └── test_admin.py        # 7단계: 관리자 API
+└── test_integration.py      # 최종: 입차 → 출차 전체 흐름
+```
+
+### 커버리지 기준
+
+| 단계 완료 후 | 기준 |
+|------------|------|
+| 1~2단계    | 60%  |
+| 3~4단계    | 70%  |
+| 5~6단계    | 80%  |
+| 7단계 이후  | 85%  |
 
 ---
 
