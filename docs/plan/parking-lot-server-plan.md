@@ -24,8 +24,8 @@ parking_lot_server/
 │   ├── models/                 # DB 스키마 문서 기준 SQLAlchemy 모델
 │   │   ├── parking_lot.py
 │   │   ├── user.py
-│   │   ├── vehicle.py          # plate_enc는 LargeBinary (BYTEA)
-│   │   └── entry_exit_log.py
+│   │   ├── vehicle.py          # plate_enc → LargeBinary (BYTEA), entered_at → DateTime(timezone=True)
+│   │   └── entry_exit_log.py   # 모든 시각 컬럼 → DateTime(timezone=True) (TIMESTAMPTZ)
 │   ├── schemas/                # Pydantic 요청/응답 모델
 │   │   ├── plates.py
 │   │   └── admin.py
