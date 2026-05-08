@@ -33,9 +33,10 @@ parking_lot_server/
 │   │   ├── plates.py           # POST /api/v1/plates
 │   │   ├── admin/
 │   │   │   ├── auth.py         # POST /admin/login
+│   │   │   ├── users.py        # POST /admin/users (superadmin 전용)
 │   │   │   ├── vehicles.py     # GET  /admin/vehicles
 │   │   │   ├── logs.py         # GET  /admin/logs
-│   │   │   └── lots.py         # GET /admin/lots, GET/PATCH /admin/lots/{lot_id}
+│   │   │   └── lots.py         # POST /admin/lots, GET /admin/lots, GET/PATCH /admin/lots/{lot_id}
 │   │   └── public/             # 추후 Hub Server 연동 시 추가
 │   ├── services/
 │   │   ├── crypto.py           # hmac_hash(), aes_encrypt(), aes_decrypt()
@@ -44,6 +45,8 @@ parking_lot_server/
 │       ├── api_key.py          # API Key 검증 → ParkingLot 반환
 │       └── jwt_auth.py         # JWT 검증 → user 페이로드 반환
 ├── alembic/
+├── scripts/
+│   └── seed.py                 # superadmin 최초 계정 생성 (일회성)
 ├── docker-compose.yml          # PostgreSQL 컨테이너
 ├── .env
 └── requirements.txt
@@ -94,10 +97,10 @@ tests/
 │   ├── test_crypto.py       # 3단계: 암호화 함수
 │   └── test_fee.py          # 4단계: 요금 계산 로직
 ├── routers/
-│   ├── test_plates.py       # 5단계: 입출차 엔드포인트
-│   ├── test_auth.py         # 6단계: 관리자 로그인
-│   └── test_admin.py        # 7단계: 관리자 API
-└── test_integration.py      # 최종: 입차 → 출차 전체 흐름
+│   ├── test_auth.py         # 5단계: 관리자 로그인 + seed
+│   ├── test_admin.py        # 6단계: 관리자 API
+│   └── test_plates.py       # 7단계: 입출차 엔드포인트
+└── test_integration.py      # 최종: 주차장 등록 → 입차 → 출차 전체 흐름
 ```
 
 ### 커버리지 기준
@@ -238,9 +241,54 @@ def calculate_fee(lot, entered_at, exited_at) -> int:
 
 ---
 
-### 5단계. `POST /api/v1/plates` + API Key 인증
+### 5단계. 관리자 JWT 인증 + seed 스크립트
 
-서버의 핵심 엔드포인트. 클라이언트가 번호판을 전송하면 입출차를 판단하고 처리한다.
+로그인 성공 시 JWT를 발급한다. 페이로드에 `role`과 `lot_id`를 포함하여 이후 모든 관리자 API에서 별도 DB 조회 없이 권한 범위를 판단할 수 있도록 한다.
+
+```python
+# JWT 페이로드 구조
+{
+    "sub":    "<user_id>",
+    "role":   "admin" | "superadmin",
+    "lot_id": "<parking_lot_id>" | None,  # superadmin은 None
+    "exp":    <만료 시각>
+}
+```
+
+검증 의존성은 토큰을 디코딩해 페이로드를 반환하기만 한다. 각 라우터가 `role`과 `lot_id`를 꺼내 쿼리 범위를 스스로 제한한다.
+
+**seed 스크립트** — API로 만들 수 없는 최초 `superadmin` 계정을 생성한다. 일회성으로 실행하며 운영 환경에서는 사용하지 않는다.
+
+```bash
+python scripts/seed.py   # superadmin 계정 생성
+```
+
+---
+
+### 6단계. 관리자 API
+
+JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 제한, `superadmin`이면 제한 없이 전체 접근.
+
+**`POST /admin/lots`** (superadmin 전용) — 주차장을 등록하고 `api_key`를 자동 생성해 반환한다. 이 api_key를 클라이언트(카메라)에 설정해야 입출차 요청이 가능하다.
+
+**`POST /admin/users`** (superadmin 전용) — `admin` 계정을 생성하고 특정 주차장에 할당한다.
+
+**`GET/PATCH /admin/lots/{lot_id}`** — `available_spaces`와 `api_key`는 수정 불가. 응답 시 `api_key`는 마스킹 처리(`abcd...xyz`).
+
+**번호판 검색** (`GET /admin/logs`) — `plate_enc`는 암호화되어 있어 LIKE 검색이 불가능하다. 검색어를 HMAC 해시한 후 `plate_hash`와 비교한다.
+
+```python
+if plate:
+    query = query.where(EntryExitLog.plate_hash == hmac_hash(plate))
+```
+
+**번호판 복호화** — `plate_enc`는 DB에서 꺼낸 후 `aes_decrypt()`를 거쳐 응답에 포함한다. FE는 평문 문자열을 받는다.
+
+---
+
+### 7단계. `POST /api/v1/plates` + API Key 인증
+
+6단계에서 주차장이 등록되어 있어야 테스트 가능하다.
 
 **API Key 인증 의존성** — 요청 헤더의 Bearer 토큰을 `parking_lots.api_key`와 대조해 해당 주차장 객체를 반환한다. 이후 라우터에서는 주차장이 이미 특정된 상태로 로직을 수행한다.
 
@@ -287,41 +335,6 @@ async with db.begin():  # 트랜잭션 시작
 ```
 
 > `entered_at`은 클라이언트가 전송한 `timestamp`로 설정한다. 스키마의 `DEFAULT NOW()`는 사용하지 않는다.
-
----
-
-### 6단계. 관리자 JWT 인증
-
-로그인 성공 시 JWT를 발급한다. 페이로드에 `role`과 `lot_id`를 포함하여 이후 모든 관리자 API에서 별도 DB 조회 없이 권한 범위를 판단할 수 있도록 한다.
-
-```python
-# JWT 페이로드 구조
-{
-    "sub":    "<user_id>",
-    "role":   "admin" | "superadmin",
-    "lot_id": "<parking_lot_id>" | None,  # superadmin은 None
-    "exp":    <만료 시각>
-}
-```
-
-검증 의존성은 토큰을 디코딩해 페이로드를 반환하기만 한다. 각 라우터가 `role`과 `lot_id`를 꺼내 쿼리 범위를 스스로 제한한다.
-
----
-
-### 7단계. 관리자 API
-
-세 가지 엔드포인트 모두 동일한 패턴을 따른다: JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 제한, `superadmin`이면 제한 없이 전체 조회.
-
-**번호판 검색** (`GET /admin/logs`) — `plate_enc`는 암호화되어 있어 LIKE 검색이 불가능하다. 검색어를 HMAC 해시한 후 `plate_hash`와 비교한다.
-
-```python
-if plate:
-    query = query.where(EntryExitLog.plate_hash == hmac_hash(plate))
-```
-
-**번호판 복호화** — `plate_enc`는 DB에서 꺼낸 후 `aes_decrypt()`를 거쳐 응답에 포함한다. FE는 평문 문자열을 받는다.
-
-**`PATCH /admin/lots/{lot_id}`** — `available_spaces`와 `api_key`는 수정 불가 필드다. 응답 시 `api_key`는 앞뒤 4자리만 노출하고 중간을 마스킹한다 (`abcd...xyz`).
 
 ---
 
