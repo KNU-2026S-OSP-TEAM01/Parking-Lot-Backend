@@ -19,6 +19,6 @@ class EntryExitLog(Base):
     server_received_at: Mapped[datetime]   = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (
-        CheckConstraint("event_type IN ('entry', 'exit')", name="ck_event_type"),
+        CheckConstraint("event_type IN ('entry', 'exit', 'admin')", name="ck_event_type"),
         Index("idx_logs_lot_time", "parking_lot_id", "client_timestamp"),
     )
