@@ -33,10 +33,10 @@ parking_lot_server/
 │   │   ├── plates.py           # POST /api/v1/plates
 │   │   ├── admin/
 │   │   │   ├── auth.py         # POST /admin/login
-│   │   │   ├── users.py        # POST /admin/users (superadmin 전용)
-│   │   │   ├── vehicles.py     # GET  /admin/vehicles
-│   │   │   ├── logs.py         # GET  /admin/logs
-│   │   │   └── lots.py         # POST /admin/lots, GET /admin/lots, GET/PATCH /admin/lots/{lot_id}
+│   │   │   ├── users.py        # POST/GET /admin/users, PATCH/DELETE /admin/users/{user_id}
+│   │   │   ├── vehicles.py     # GET /admin/vehicles, DELETE /admin/vehicles/{vehicle_id}
+│   │   │   ├── logs.py         # GET /admin/logs
+│   │   │   └── lots.py         # POST/GET /admin/lots, GET/PATCH/DELETE /admin/lots/{lot_id}
 │   │   └── public/             # 추후 Hub Server 연동 시 추가
 │   ├── services/
 │   │   ├── crypto.py           # hmac_hash(), aes_encrypt(), aes_decrypt()
@@ -293,7 +293,7 @@ JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 
 | Method | Endpoint | 권한 | 설명 |
 |--------|----------|------|------|
 | GET | `/admin/vehicles` | 전체 | 현재 주차 중인 차량 목록 |
-| DELETE | `/admin/vehicles/{vehicle_id}` | 전체 | 예외 상황 수동 출차 처리 (카메라 오류, 강제 퇴거 등). `available_spaces += 1` 및 로그 기록 |
+| DELETE | `/admin/vehicles/{vehicle_id}` | 전체 | 예외 상황 수동 출차 처리 (카메라 오류, 강제 퇴거 등). `available_spaces += 1`, `event_type='exit'`로 로그 기록 |
 
 **입출차 로그 (`/admin/logs`) — 읽기 전용**
 
