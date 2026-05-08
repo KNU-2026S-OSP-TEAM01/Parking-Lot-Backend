@@ -1,8 +1,10 @@
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from app.config import settings
-from app.database import Base
+from app.database import Base, get_db
+from app.main import app
 from app.models.parking_lot import ParkingLot
 from app.models.user import User
 from app.models.vehicle import Vehicle
@@ -32,3 +34,18 @@ async def db():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
         await engine.dispose()
+
+
+@pytest.fixture
+async def client(db):
+    """
+    테스트용 HTTP 클라이언트.
+    get_db 의존성을 테스트 세션으로 교체해 라우터가 테스트 DB를 사용하도록 한다.
+    """
+    async def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
