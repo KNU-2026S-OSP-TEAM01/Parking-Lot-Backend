@@ -20,5 +20,10 @@ def test_hmac_key_is_hex_64():
     assert all(c in "0123456789abcdef" for c in settings.hmac_key)
 
 
+def test_test_database_url_is_different_from_database_url():
+    """테스트 DB와 개발 DB가 분리되어 있는지 확인."""
+    assert settings.test_database_url != settings.database_url
+
+
 def test_mode_is_valid():
     assert settings.mode in ("private", "public")
