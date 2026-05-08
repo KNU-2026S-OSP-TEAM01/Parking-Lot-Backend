@@ -26,9 +26,13 @@ parking_lot_server/
 │   │   ├── user.py
 │   │   ├── vehicle.py          # plate_enc → LargeBinary (BYTEA), entered_at → DateTime(timezone=True)
 │   │   └── entry_exit_log.py   # 모든 시각 컬럼 → DateTime(timezone=True) (TIMESTAMPTZ)
-│   ├── schemas/                # Pydantic 요청/응답 모델
-│   │   ├── plates.py
-│   │   └── admin.py
+│   ├── schemas/                # Pydantic 요청/응답 모델 (엔티티 단위)
+│   │   ├── auth.py             # LoginRequest, TokenResponse
+│   │   ├── lot.py              # LotCreate, LotOut, LotPatch
+│   │   ├── user.py             # UserCreate, UserOut, UserPatch
+│   │   ├── vehicle.py          # VehicleOut
+│   │   ├── log.py              # LogOut
+│   │   └── plate.py            # PlateRequest, EntryResponse, ExitResponse
 │   ├── routers/
 │   │   ├── plates.py           # POST /api/v1/plates
 │   │   ├── admin/
@@ -98,7 +102,10 @@ tests/
 │   └── test_fee.py          # 4단계: 요금 계산 로직
 ├── routers/
 │   ├── test_auth.py         # 5단계: 관리자 로그인 + seed
-│   ├── test_admin.py        # 6단계: 관리자 API
+│   ├── test_lots.py         # 6단계: 주차장 CRUD
+│   ├── test_users.py        # 6단계: 관리자 계정 CRUD
+│   ├── test_vehicles.py     # 6단계: 차량 목록, 수동 출차
+│   ├── test_logs.py         # 6단계: 입출차 로그 조회
 │   └── test_plates.py       # 7단계: 입출차 엔드포인트
 └── test_integration.py      # 최종: 주차장 등록 → 입차 → 출차 전체 흐름
 ```

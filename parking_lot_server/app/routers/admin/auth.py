@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.schemas.admin import LoginRequest, TokenResponse
+from app.schemas.auth import LoginRequest, TokenResponse
 
 router = APIRouter()
 
