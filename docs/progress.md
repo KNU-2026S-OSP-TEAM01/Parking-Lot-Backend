@@ -175,3 +175,77 @@ HTTP 409
 서버가 자동으로 판단합니다. 같은 번호판을 처음 보내면 입차, 이미 있으면 출차로 처리합니다. 클라이언트가 판단할 필요 없습니다.
 
 > 재전송 시 주의: 응답 실패 후 같은 요청을 재전송하면 입출차가 반전될 수 있습니다. 재전송 전에 현재 상태를 확인하는 절차가 필요합니다.
+
+---
+
+## 로컬 실행 및 테스트 방법
+
+### 사전 요구사항
+- Docker Desktop
+- Python 3.12+
+
+### 서버 실행
+
+```bash
+cd parking_lot_server
+
+# 1. 가상환경 설정 (최초 1회)
+python -m venv .venv
+source .venv/Scripts/activate   # Windows Git Bash
+pip install -r requirements.txt
+
+# 2. DB 실행
+docker compose up -d
+
+# 3. DB 마이그레이션 (최초 1회 또는 스키마 변경 시)
+alembic upgrade head
+
+# 4. superadmin 계정 생성 (최초 1회)
+python scripts/seed.py
+
+# 5. 서버 실행
+uvicorn app.main:app --reload
+```
+
+서버가 뜨면 `http://localhost:8000/docs` 에서 Swagger UI로 API를 확인할 수 있습니다.
+
+### API 테스트 순서
+
+```bash
+# 1. 로그인 → access_token 발급
+POST /admin/login
+{ "username": "superadmin", "password": "changeme" }
+
+# 2. 주차장 등록 → api_key 발급 (이 때만 원문 반환)
+POST /admin/lots
+Authorization: Bearer {access_token}
+
+# 3. 번호판 전송 (입차)
+POST /api/v1/plates
+Authorization: Bearer {api_key}
+{ "plate": "12가3456", "timestamp": "2026-05-08T10:00:00+09:00" }
+
+# 4. 같은 번호판 재전송 (출차)
+POST /api/v1/plates
+Authorization: Bearer {api_key}
+{ "plate": "12가3456", "timestamp": "2026-05-08T11:30:00+09:00" }
+```
+
+### 자동화 테스트 실행
+
+```bash
+cd parking_lot_server
+source .venv/Scripts/activate
+
+# Docker DB가 실행 중이어야 함 (테스트 전용 DB: 포트 5433)
+docker compose up -d
+
+# 전체 테스트 + 커버리지
+python -m pytest
+
+# 빠르게 (커버리지 제외)
+python -m pytest --no-cov
+
+# 특정 파일만
+python -m pytest tests/routers/test_plates.py
+```
