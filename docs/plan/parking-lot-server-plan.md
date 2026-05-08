@@ -293,7 +293,7 @@ JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 
 | Method | Endpoint | 권한 | 설명 |
 |--------|----------|------|------|
 | GET | `/admin/vehicles` | 전체 | 현재 주차 중인 차량 목록 |
-| DELETE | `/admin/vehicles/{vehicle_id}` | 전체 | 예외 상황 수동 출차 처리 (카메라 오류, 강제 퇴거 등). `available_spaces += 1`, `event_type='exit'`로 로그 기록 |
+| DELETE | `/admin/vehicles/{vehicle_id}` | 전체 | 예외 상황 수동 출차 처리 (카메라 오류, 강제 퇴거 등). `available_spaces += 1`, `event_type='admin'`으로 로그 기록 |
 
 **입출차 로그 (`/admin/logs`) — 읽기 전용**
 
