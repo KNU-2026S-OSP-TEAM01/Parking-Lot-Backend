@@ -269,11 +269,37 @@ python scripts/seed.py   # superadmin 계정 생성
 
 JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 제한, `superadmin`이면 제한 없이 전체 접근.
 
-**`POST /admin/lots`** (superadmin 전용) — 주차장을 등록하고 `api_key`를 자동 생성해 반환한다. 이 api_key를 클라이언트(카메라)에 설정해야 입출차 요청이 가능하다.
+**주차장 (`/admin/lots`)**
 
-**`POST /admin/users`** (superadmin 전용) — `admin` 계정을 생성하고 특정 주차장에 할당한다.
+| Method | Endpoint | 권한 | 설명 |
+|--------|----------|------|------|
+| POST | `/admin/lots` | superadmin | 주차장 등록, `api_key` 자동 생성 |
+| GET | `/admin/lots` | 전체 | superadmin: 전체 목록 / admin: 자신의 것 |
+| GET | `/admin/lots/{lot_id}` | 전체 | 단건 조회 |
+| PATCH | `/admin/lots/{lot_id}` | 전체 | 정보 수정 (`available_spaces`, `api_key` 제외) |
+| DELETE | `/admin/lots/{lot_id}` | superadmin | 삭제 대신 `is_active=false` 처리 |
 
-**`GET/PATCH /admin/lots/{lot_id}`** — `available_spaces`와 `api_key`는 수정 불가. 응답 시 `api_key`는 마스킹 처리(`abcd...xyz`).
+**관리자 계정 (`/admin/users`)**
+
+| Method | Endpoint | 권한 | 설명 |
+|--------|----------|------|------|
+| POST | `/admin/users` | superadmin | `admin` 계정 생성 및 주차장 할당 |
+| GET | `/admin/users` | superadmin | 전체 목록 |
+| PATCH | `/admin/users/{user_id}` | 전체 | 비밀번호 등 수정 |
+| DELETE | `/admin/users/{user_id}` | superadmin | 계정 삭제 |
+
+**현재 주차 차량 (`/admin/vehicles`)**
+
+| Method | Endpoint | 권한 | 설명 |
+|--------|----------|------|------|
+| GET | `/admin/vehicles` | 전체 | 현재 주차 중인 차량 목록 |
+| DELETE | `/admin/vehicles/{vehicle_id}` | 전체 | 예외 상황 수동 출차 처리 (카메라 오류, 강제 퇴거 등). `available_spaces += 1` 및 로그 기록 |
+
+**입출차 로그 (`/admin/logs`) — 읽기 전용**
+
+| Method | Endpoint | 권한 | 설명 |
+|--------|----------|------|------|
+| GET | `/admin/logs` | 전체 | 날짜 필터, 번호판 검색 지원 |
 
 **번호판 검색** (`GET /admin/logs`) — `plate_enc`는 암호화되어 있어 LIKE 검색이 불가능하다. 검색어를 HMAC 해시한 후 `plate_hash`와 비교한다.
 
@@ -283,6 +309,8 @@ if plate:
 ```
 
 **번호판 복호화** — `plate_enc`는 DB에서 꺼낸 후 `aes_decrypt()`를 거쳐 응답에 포함한다. FE는 평문 문자열을 받는다.
+
+**`api_key` 응답 마스킹** — `GET /admin/lots` 응답 시 `api_key`는 앞뒤 4자리만 노출(`abcd...xyz`). 실제 값은 최초 `POST /admin/lots` 응답 시 한 번만 반환한다.
 
 ---
 
