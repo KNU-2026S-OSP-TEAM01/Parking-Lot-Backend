@@ -36,7 +36,7 @@ parking_lot_server/
 │   ├── routers/
 │   │   ├── plates.py           # POST /api/v1/plates
 │   │   ├── admin/
-│   │   │   ├── auth.py         # POST /admin/login
+│   │   │   ├── auth.py         # POST /admin/login, POST /auth/signup
 │   │   │   ├── users.py        # POST/GET /admin/users, PATCH/DELETE /admin/users/{user_id}
 │   │   │   ├── vehicles.py     # GET /admin/vehicles, DELETE /admin/vehicles/{vehicle_id}
 │   │   │   ├── logs.py         # GET /admin/logs
@@ -101,7 +101,7 @@ tests/
 │   ├── test_crypto.py       # 3단계: 암호화 함수
 │   └── test_fee.py          # 4단계: 요금 계산 로직
 ├── routers/
-│   ├── test_auth.py         # 5단계: 관리자 로그인 + seed
+│   ├── test_auth.py         # 5단계: 관리자 로그인 + seed + 회원가입
 │   ├── test_lots.py         # 6단계: 주차장 CRUD
 │   ├── test_users.py        # 6단계: 관리자 계정 CRUD
 │   ├── test_vehicles.py     # 6단계: 차량 목록, 수동 출차
@@ -276,6 +276,14 @@ python scripts/seed.py   # superadmin 계정 생성
 
 JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 제한, `superadmin`이면 제한 없이 전체 접근.
 
+**회원가입 (`/auth/signup`) — 인증 불필요**
+
+| Method | Endpoint | 권한 | 설명 |
+|--------|----------|------|------|
+| POST | `/auth/signup` | 없음 (공개) | 주차장 주인 셀프 가입. `admin` role로 등록, `parking_lot_id = NULL` |
+
+> 회원가입 후 superadmin에게 lot 배정을 요청한다. superadmin이 Hub를 통해 `PATCH /admin/users/{user_id}`로 `parking_lot_id`를 연결하면 해당 admin이 자신의 lot 정보(api_key 포함)를 조회할 수 있다.
+
 **주차장 (`/admin/lots`)**
 
 | Method | Endpoint | 권한 | 설명 |
@@ -290,9 +298,9 @@ JWT에서 `role`을 확인하고, `admin`이면 자신의 `lot_id`로 쿼리를 
 
 | Method | Endpoint | 권한 | 설명 |
 |--------|----------|------|------|
-| POST | `/admin/users` | superadmin | `admin` 계정 생성 및 주차장 할당 |
+| POST | `/admin/users` | superadmin | `admin` 계정 직접 생성 (superadmin이 대신 가입해줄 때) |
 | GET | `/admin/users` | superadmin | 전체 목록 |
-| PATCH | `/admin/users/{user_id}` | 전체 | 비밀번호 등 수정 |
+| PATCH | `/admin/users/{user_id}` | superadmin | `parking_lot_id` 배정 또는 비밀번호 등 수정 |
 | DELETE | `/admin/users/{user_id}` | superadmin | 계정 삭제 |
 
 **현재 주차 차량 (`/admin/vehicles`)**
