@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
 class UserPatch(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
+    parking_lot_id: Optional[uuid.UUID] = None  # superadmin 전용: lot 배정
 
 
 class UserOut(BaseModel):

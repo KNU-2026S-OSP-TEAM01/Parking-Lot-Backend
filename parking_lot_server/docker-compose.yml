@@ -19,5 +19,19 @@ services:
     ports:
       - "5433:5432"
 
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Docker 내부에서 DB는 서비스명으로 접근
+      DATABASE_URL: postgresql+asyncpg://openpark:openpark@db/openpark
+    volumes:
+      - .:/app   # --reload가 코드 변경을 감지하도록 소스 마운트
+    depends_on:
+      - db
+
 volumes:
   postgres_data:
