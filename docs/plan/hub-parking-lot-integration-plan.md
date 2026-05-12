@@ -111,21 +111,23 @@ hub_url: str | None = None
 
 Private 모드에서는 `HUB_URL`이 없어도 서버가 정상 동작해야 한다.
 
-### 2. `POST /admin/lots` — Public 모드 시 Hub push
+### 2. `POST /admin/lots` — Public 모드 시 Hub push (원자적 처리)
 
-lot 생성 후 `MODE=public`이고 `HUB_URL`이 설정된 경우에만 Hub에 push한다.
+lot 생성과 Hub push를 하나의 트랜잭션으로 묶는다.  
+Hub push가 실패하면 lot 생성도 롤백한다. PLS와 Hub는 항상 일관성을 유지한다.
 
 ```python
 async def create_lot(...):
-    lot = 주차장 생성()
+    lot = 주차장 생성()          # DB에 flush (아직 commit 전)
 
     if settings.mode == "public" and settings.hub_url:
-        await notify_hub(lot)   # 실패해도 lot 생성은 유지, 로그 기록
+        await notify_hub(lot)    # 실패 시 HTTPException 발생 → 트랜잭션 롤백
 
-    return lot
+    return lot                   # 정상 반환 시 get_db가 commit
 ```
 
-push 실패(Hub 다운 등)는 lot 생성 자체를 롤백하지 않는다. 로그만 남긴다.
+Hub push 실패(연결 오류, 타임아웃 등) 시 `503 Service Unavailable`을 반환한다.  
+superadmin은 Hub 상태를 확인한 후 재시도한다.
 
 ### 3. `GET /public/status/{lot_id}` — 인증 없는 공개 엔드포인트
 
