@@ -352,7 +352,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | Hub push — lot 비활성화 (`DELETE /admin/lots` 시) | ⬜ 미구현 | — |
 | `GET /public/status/{lot_id}` | ⬜ 미구현 | — |
 | `POST /lots` — lot 등록 수신 | — | ⬜ 미구현 |
-| `PATCH /lots/{lot_id}` — 비활성화 수신 | — | ⬜ 미구현 |
+| `PATCH /lots/{pl_lot_id}` — 비활성화 수신 | — | ⬜ 미구현 |
 | 폴링 로직 | — | ⬜ 미구현 |
 | 로컬 연동 테스트 | ⬜ 예정 | ⬜ 예정 |
 | 실제 IP 연동 테스트 | ⬜ 예정 | ⬜ 예정 |
