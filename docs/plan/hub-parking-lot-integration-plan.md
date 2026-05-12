@@ -225,9 +225,13 @@ if settings.mode == "public":
 | `pl_api_key` | — | **미사용** (단일 PLS 가정으로 인증 불필요) |
 | `name`, `address`, 요금 필드 등 | PLS가 전송한 값 | |
 
-### `POST /lots` — lot 등록 수신 (인증 없음)
+### `POST /lots` — lot 등록 수신
 
-PLS가 전송하는 페이로드:
+- 인증: 없음
+- 호출 시점: PLS의 `POST /admin/lots` 성공 직후 (원자적 처리)
+
+**요청 (PLS → Hub)**
+
 ```json
 {
   "pls_url": "http://192.168.1.100:8000",
@@ -243,14 +247,41 @@ PLS가 전송하는 페이로드:
 }
 ```
 
-Hub는 `pls_url` → `pl_server_url`, `lot_id` → `pl_lot_id`로 저장한다.
+| 필드 | Hub DB 저장 위치 |
+|------|----------------|
+| `pls_url` | `pl_server_url` |
+| `lot_id` | `pl_lot_id` |
+| 나머지 필드 | 동일한 이름의 컬럼 |
 
-### `PATCH /lots/{lot_id}` — lot 비활성화 수신 (인증 없음)
+**응답**
 
-PLS가 전송하는 페이로드:
+| 상태 | 의미 |
+|------|------|
+| 201 Created | 등록 성공 |
+| 409 Conflict | 동일 `lot_id`가 이미 등록됨 |
+
+PLS는 201이 아닌 경우 HTTPException을 발생시켜 lot 생성 트랜잭션을 롤백한다.
+
+---
+
+### `PATCH /lots/{pl_lot_id}` — lot 비활성화 수신
+
+- 인증: 없음
+- `{pl_lot_id}`: PLS의 `parking_lots.id` (Hub의 `pl_lot_id` 필드로 조회)
+- 호출 시점: PLS의 `DELETE /admin/lots/{lot_id}` 처리 시 (best-effort, 실패해도 PLS 비활성화는 유지)
+
+**요청 (PLS → Hub)**
+
 ```json
 { "is_active": false }
 ```
+
+**응답**
+
+| 상태 | 의미 |
+|------|------|
+| 200 OK | 업데이트 성공 |
+| 404 Not Found | 해당 `pl_lot_id`가 Hub에 없음 |
 
 ### 폴링 로직
 
@@ -266,11 +297,11 @@ for each lot where lot_type='parking_lot_server' AND is_active=true:
 
 ## 인터페이스 요약
 
-| 방향 | 엔드포인트 | 인증 | 시점 |
-|------|-----------|------|------|
-| PLS → Hub | `POST {HUB_URL}/lots` | 없음 | lot 생성 시 (Public 모드) |
-| PLS → Hub | `PATCH {HUB_URL}/lots/{lot_id}` | 없음 | lot 비활성화 시 (Public 모드) |
-| Hub → PLS | `GET /public/status/{lot_id}` | 없음 | 주기적 폴링 |
+| 방향 | 엔드포인트 | 인증 | 시점 | 원자성 |
+|------|-----------|------|------|--------|
+| PLS → Hub | `POST {HUB_URL}/lots` | 없음 | lot 생성 시 (Public 모드) | 원자적 (실패 시 lot 롤백) |
+| PLS → Hub | `PATCH {HUB_URL}/lots/{pl_lot_id}` | 없음 | lot 비활성화 시 (Public 모드) | best-effort |
+| Hub → PLS | `GET /public/status/{lot_id}` | 없음 | 주기적 폴링 | — |
 
 ---
 
