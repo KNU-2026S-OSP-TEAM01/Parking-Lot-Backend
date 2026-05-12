@@ -67,6 +67,11 @@ async def update_user(
 
     target = await _get_user_or_404(user_id, db)
 
+    if body.parking_lot_id is not None:
+        if current_user["role"] != "superadmin":
+            raise HTTPException(status_code=403, detail="forbidden")
+        target.parking_lot_id = body.parking_lot_id
+
     if body.email is not None:
         target.email = body.email
     if body.password is not None:

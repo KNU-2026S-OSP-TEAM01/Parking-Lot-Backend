@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies.jwt_auth import get_current_user, require_superadmin
 from app.models.parking_lot import ParkingLot
 from app.schemas.lot import LotCreate, LotOut, LotPatch
+from app.services.hub import notify_hub_lot_created, notify_hub_lot_deactivated
 
 router = APIRouter()
 
@@ -59,6 +61,10 @@ async def create_lot(
     db.add(lot)
     await db.flush()
     await db.refresh(lot)
+
+    if settings.mode == "public" and settings.hub_url:
+        await notify_hub_lot_created(lot)  # 실패 시 HTTPException(503) → 롤백
+
     # 최초 등록 시에만 api_key 원문 반환
     return _serialize(lot, mask_key=False)
 
@@ -123,3 +129,6 @@ async def deactivate_lot(
     lot = await _get_lot_or_404(lot_id, db)
     lot.is_active = False
     await db.flush()
+
+    if settings.mode == "public" and settings.hub_url:
+        await notify_hub_lot_deactivated(lot_id)  # best-effort, 실패해도 계속

@@ -15,4 +15,5 @@ app.include_router(vehicles.router, prefix="/admin", tags=["vehicles"])
 app.include_router(logs.router,     prefix="/admin", tags=["logs"])
 
 if settings.mode == "public":
-    pass  # TODO: public 라우터 마운트 (Hub Server 연동 시)
+    from app.routers.public import status
+    app.include_router(status.router, prefix="/public", tags=["public"])
