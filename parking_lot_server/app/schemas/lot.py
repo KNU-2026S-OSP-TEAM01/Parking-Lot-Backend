@@ -25,11 +25,11 @@ class LotPatch(BaseModel):
     extra_fee_per_unit: Optional[int] = None
     extra_fee_unit_minutes: Optional[int] = Field(default=None, gt=0)
     daily_max_fee: Optional[int] = None
-    is_active: Optional[bool] = None
 
 
 class LotOut(BaseModel):
     id: uuid.UUID
+    owner_user_id: uuid.UUID
     name: str
     address: Optional[str]
     total_spaces: int
@@ -39,7 +39,7 @@ class LotOut(BaseModel):
     extra_fee_per_unit: int
     extra_fee_unit_minutes: int
     daily_max_fee: Optional[int]
-    api_key: str  # 조회 시 마스킹, 최초 등록 시에만 원문 반환
+    api_key: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
