@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.database import get_db
 from app.dependencies.jwt_auth import get_current_user, get_owned_lot
 from app.models.entry_exit_log import EntryExitLog
@@ -18,7 +17,6 @@ from app.schemas.lot import LotCreate, LotOut, LotPatch
 from app.schemas.vehicle import VehicleOut
 from app.services.crypto import aes_decrypt, aes_encrypt, hmac_hash
 from app.services.fee import calculate_fee
-from app.services.hub import notify_hub_lot_created, notify_hub_lot_deactivated
 
 router = APIRouter()
 
@@ -65,10 +63,6 @@ async def create_lot(
     db.add(lot)
     await db.flush()
     await db.refresh(lot)
-
-    if settings.mode == "public" and settings.hub_url:
-        await notify_hub_lot_created(lot)
-
     return _serialize_lot(lot, mask_key=False)
 
 
@@ -126,10 +120,6 @@ async def delete_lot(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     lot = await get_owned_lot(str(lot_id), current_user, db)
-
-    if settings.mode == "public" and settings.hub_url:
-        await notify_hub_lot_deactivated(lot_id)
-
     await db.delete(lot)
     await db.flush()
 

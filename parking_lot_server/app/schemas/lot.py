@@ -25,7 +25,6 @@ class LotPatch(BaseModel):
     extra_fee_per_unit: Optional[int] = None
     extra_fee_unit_minutes: Optional[int] = Field(default=None, gt=0)
     daily_max_fee: Optional[int] = None
-    is_active: Optional[bool] = None
 
 
 class LotOut(BaseModel):
