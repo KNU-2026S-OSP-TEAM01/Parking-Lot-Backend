@@ -103,8 +103,13 @@ async def update_lot(
     lot = await get_owned_lot(str(lot_id), current_user, db)
     patch = body.model_dump(exclude_none=True)
 
-    if "total_spaces" in patch and patch["total_spaces"] < lot.available_spaces:
-        raise HTTPException(status_code=400, detail="invalid_total_spaces")
+    if "total_spaces" in patch:
+        currently_parked = lot.total_spaces - lot.available_spaces
+        new_total = patch["total_spaces"]
+        if new_total < currently_parked:
+            raise HTTPException(status_code=400, detail="invalid_total_spaces")
+        # available_spaces를 새 total 기준으로 재계산
+        patch["available_spaces"] = new_total - currently_parked
 
     for field, value in patch.items():
         setattr(lot, field, value)

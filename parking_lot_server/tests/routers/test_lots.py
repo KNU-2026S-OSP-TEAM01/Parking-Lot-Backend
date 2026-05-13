@@ -91,9 +91,32 @@ async def test_patch_other_lot_returns_403(client: AsyncClient, other_token, lot
     assert res.status_code == 403
 
 
-async def test_patch_total_spaces_below_available_returns_400(client: AsyncClient, user_token, lot):
-    res = await client.patch(f"/api/v1/lots/{lot.id}", json={"total_spaces": 1}, headers=_auth(user_token))
+async def test_patch_total_spaces_below_parked_count_returns_400(
+    client: AsyncClient, user_token, lot, db
+):
+    """주차 중인 차량 수보다 total_spaces를 낮게 설정하면 400."""
+    from app.models.vehicle import Vehicle
+    from app.services.crypto import aes_encrypt, hmac_hash
+    from datetime import datetime, timezone
+
+    # 차량 10대 주차 (available_spaces: 100 → 90)
+    for i in range(10):
+        db.add(Vehicle(
+            parking_lot_id=lot.id,
+            plate_hash=hmac_hash(f"1{i}가0000"),
+            plate_enc=aes_encrypt(f"1{i}가0000"),
+            entered_at=datetime.now(timezone.utc),
+        ))
+    lot.available_spaces -= 10
+    await db.flush()
+
+    # total_spaces=9: 주차 중(10)보다 작으므로 400
+    res = await client.patch(f"/api/v1/lots/{lot.id}", json={"total_spaces": 9}, headers=_auth(user_token))
     assert res.status_code == 400
+
+    # total_spaces=10: 주차 중(10)과 같으므로 허용
+    res = await client.patch(f"/api/v1/lots/{lot.id}", json={"total_spaces": 10}, headers=_auth(user_token))
+    assert res.status_code == 200
 
 
 # ── DELETE /api/v1/lots/{lot_id} ─────────────────────────────────────────────
