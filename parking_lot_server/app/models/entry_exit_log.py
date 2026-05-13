@@ -10,7 +10,7 @@ class EntryExitLog(Base):
     __tablename__ = "entry_exit_logs"
 
     id:                 Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    parking_lot_id:     Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("parking_lots.id"), nullable=False)
+    parking_lot_id:     Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("parking_lots.id", ondelete="CASCADE"), nullable=False)
     plate_hash:         Mapped[str]        = mapped_column(String(64), nullable=False)
     plate_enc:          Mapped[bytes]      = mapped_column(LargeBinary, nullable=False)
     event_type:         Mapped[str]        = mapped_column(String(5), nullable=False)
