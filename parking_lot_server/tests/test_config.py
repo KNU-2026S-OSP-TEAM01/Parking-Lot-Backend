@@ -25,5 +25,5 @@ def test_test_database_url_is_different_from_database_url():
     assert settings.test_database_url != settings.database_url
 
 
-def test_mode_is_valid():
-    assert settings.mode in ("private", "public")
+def test_enable_signup_is_bool():
+    assert isinstance(settings.enable_signup, bool)
