@@ -103,11 +103,40 @@ async def get_owned_lot(lot_id, current_user, db) -> ParkingLot:
     return lot
 ```
 
+### Private / Public 구분 기준
+
+PLS의 Private/Public 구분은 **`ENABLE_SIGNUP` 환경변수**로 결정된다.  
+`MODE`는 Hub 연동 여부(Hub push, `/public/status` 노출)를 제어하는 별개의 설정이다.
+
+| 배포 유형 | `ENABLE_SIGNUP` | `MODE` | 특징 |
+|----------|-----------------|--------|------|
+| **Private** | `true` | `private` | 누구나 회원가입 후 주차장 등록 가능 |
+| **Public** | `false` | `public` | 회원가입 차단. 최고 관리자가 SQL로 직접 계정 주입 후 운영 |
+
+**Public PLS 최초 계정 생성 방법**
+
+`ENABLE_SIGNUP=false` 환경에서는 `POST /api/v1/signup`이 막혀있다.  
+최고 관리자가 DB에 직접 SQL로 계정을 주입해야 한다.
+
+```sql
+-- scripts/seed.sql 참고
+-- password_hash는 bcrypt로 직접 생성
+INSERT INTO users (id, username, email, password_hash, created_at)
+VALUES (gen_random_uuid(), 'admin', 'admin@example.com', '<bcrypt_hash>', NOW());
+```
+
+bcrypt 해시 생성:
+```python
+import bcrypt
+print(bcrypt.hashpw(b"yourpassword", bcrypt.gensalt()).decode())
+```
+
 ### 환경변수 추가
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `ENABLE_SIGNUP` | `true` | `false`이면 회원가입 API 비활성화 (403 반환) |
+| `ENABLE_SIGNUP` | `true` | `false`이면 `POST /api/v1/signup` 비활성화 (403 반환) |
+| `MODE` | `private` | `public`이면 Hub push 및 `/public/status` 활성화 |
 
 ---
 

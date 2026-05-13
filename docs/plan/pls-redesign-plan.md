@@ -25,7 +25,8 @@ FE 팀과의 협의를 통해 아래 두 가지를 결정했다.
 | 주차장 삭제 | soft delete (`is_active=false`) | hard delete |
 | 차량·로그 경로 | `/admin/vehicles`, `/admin/logs` | `/api/v1/lots/{lot_id}/vehicles`, `…/logs` |
 | 회원가입 | 항상 열림 | `ENABLE_SIGNUP` 환경변수로 제어 |
-| 최고 관리자 생성 | `seed.py` 스크립트 | 직접 DB 주입 |
+| 최고 관리자 생성 | `seed.py` 스크립트 | 직접 DB 주입 (SQL) |
+| Private/Public 구분 | `MODE` 환경변수 | `ENABLE_SIGNUP` 환경변수 |
 
 ---
 
@@ -134,6 +135,18 @@ owner_user_id UUID NOT NULL REFERENCES users(id)
 
 ### 의존성
 - `app/dependencies/jwt_auth.py` — `require_superadmin`, role 관련 제거. 소유권 검증 헬퍼로 대체
+
+### Private / Public 구분
+
+`ENABLE_SIGNUP`이 Private/Public의 실질적 구분 기준이다.  
+`MODE`는 Hub 연동 여부를 제어하는 별개 설정이다.
+
+| 배포 유형 | `ENABLE_SIGNUP` | `MODE` |
+|----------|-----------------|--------|
+| Private | `true` | `private` |
+| Public | `false` | `public` |
+
+Public 환경에서 최초 계정은 SQL로 직접 주입한다 (`scripts/seed.sql` 참고).
 
 ### 설정 / 인프라
 - `app/config.py` — `ENABLE_SIGNUP: bool = True` 추가
