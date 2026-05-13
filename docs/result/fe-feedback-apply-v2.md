@@ -19,14 +19,17 @@
 | 항목 | 내용 |
 |------|------|
 | `app/services/hub.py` | Hub HTTP push 서비스 파일 전체 삭제 |
-| `app/config.py` | `hub_url` 환경변수 제거 |
-| `app/main.py` | `MODE=public` 분기 및 `/public/status` 라우터 마운트 제거 |
+| `app/routers/public/` | Hub 폴링용 `GET /public/status/{lot_id}` 엔드포인트 삭제 |
+| `app/config.py` | `hub_url`, `mode` 환경변수 제거 |
+| `app/main.py` | `MODE` 분기 및 public 라우터 마운트 코드 제거 |
 | `app/routers/lots.py` | `notify_hub_lot_created`, `notify_hub_lot_deactivated` 호출 제거 |
-| `.env.example` | `HUB_URL` 항목 제거 |
+| `.env.example` | `HUB_URL`, `MODE` 항목 제거 |
+
+> `MODE` 환경변수는 Hub push와 `/public/status` 마운트를 제어하는 용도였으나, 두 기능 모두 제거되어 의미가 없어졌다. `ENABLE_SIGNUP`이 Private/Public 구분의 유일한 기준이다.
 
 **변경 후 구조**
 
-PLS는 이제 Hub와 직접 통신하지 않는다. Hub가 PLS의 DB에 접근해 필요한 데이터를 읽는다.
+PLS는 이제 Hub와 직접 통신하지 않는다. Hub가 PLS의 DB에 직접 접근해 필요한 데이터를 읽는다.
 
 ---
 
