@@ -9,6 +9,7 @@ from app.models.parking_lot import ParkingLot
 bearer = HTTPBearer()
 
 
+
 async def get_parking_lot(
     credentials: HTTPAuthorizationCredentials = Security(bearer),
     db: AsyncSession = Depends(get_db),
@@ -16,7 +17,6 @@ async def get_parking_lot(
     result = await db.execute(
         select(ParkingLot).where(
             ParkingLot.api_key == credentials.credentials,
-            ParkingLot.is_active == True,
         )
     )
     lot = result.scalar_one_or_none()

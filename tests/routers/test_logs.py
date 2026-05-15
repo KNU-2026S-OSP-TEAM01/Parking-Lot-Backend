@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime, timezone
 
-import pytest
 from httpx import AsyncClient
 
 from app.models.entry_exit_log import EntryExitLog
@@ -62,3 +61,72 @@ async def test_logs_pagination(client: AsyncClient, user_token, lot, db):
     await db.flush()
     res = await client.get(f"/api/v1/lots/{lot.id}/logs?limit=2&offset=0", headers=_auth(user_token))
     assert len(res.json()) == 2
+
+
+async def test_filter_logs_by_date_from(client: AsyncClient, user_token, lot, db):
+    from datetime import date, timedelta
+
+    old_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    new_ts = datetime(2026, 5, 1, tzinfo=timezone.utc)
+
+    db.add(EntryExitLog(
+        id=uuid.uuid4(), parking_lot_id=lot.id,
+        plate_hash=hmac_hash("11가1111"), plate_enc=aes_encrypt("11가1111"),
+        event_type="entry", fee=None,
+        client_timestamp=old_ts, server_received_at=old_ts,
+    ))
+    db.add(EntryExitLog(
+        id=uuid.uuid4(), parking_lot_id=lot.id,
+        plate_hash=hmac_hash("22나2222"), plate_enc=aes_encrypt("22나2222"),
+        event_type="entry", fee=None,
+        client_timestamp=new_ts, server_received_at=new_ts,
+    ))
+    await db.flush()
+
+    res = await client.get(
+        f"/api/v1/lots/{lot.id}/logs?date_from=2026-03-01",
+        headers=_auth(user_token),
+    )
+    assert res.status_code == 200
+    plates = [log["plate"] for log in res.json()]
+    assert "22나2222" in plates
+    assert "11가1111" not in plates
+
+
+async def test_filter_logs_by_date_to(client: AsyncClient, user_token, lot, db):
+    old_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    new_ts = datetime(2026, 5, 1, tzinfo=timezone.utc)
+
+    db.add(EntryExitLog(
+        id=uuid.uuid4(), parking_lot_id=lot.id,
+        plate_hash=hmac_hash("11가1111"), plate_enc=aes_encrypt("11가1111"),
+        event_type="entry", fee=None,
+        client_timestamp=old_ts, server_received_at=old_ts,
+    ))
+    db.add(EntryExitLog(
+        id=uuid.uuid4(), parking_lot_id=lot.id,
+        plate_hash=hmac_hash("22나2222"), plate_enc=aes_encrypt("22나2222"),
+        event_type="entry", fee=None,
+        client_timestamp=new_ts, server_received_at=new_ts,
+    ))
+    await db.flush()
+
+    res = await client.get(
+        f"/api/v1/lots/{lot.id}/logs?date_to=2026-03-01",
+        headers=_auth(user_token),
+    )
+    assert res.status_code == 200
+    plates = [log["plate"] for log in res.json()]
+    assert "11가1111" in plates
+    assert "22나2222" not in plates
+
+
+async def test_logs_offset(client: AsyncClient, user_token, lot, db):
+    for i in range(5):
+        db.add(_make_log(lot.id, f"1{i}가0000"))
+    await db.flush()
+
+    res_all  = await client.get(f"/api/v1/lots/{lot.id}/logs?limit=5&offset=0", headers=_auth(user_token))
+    res_skip = await client.get(f"/api/v1/lots/{lot.id}/logs?limit=5&offset=3", headers=_auth(user_token))
+    assert len(res_all.json())  == 5
+    assert len(res_skip.json()) == 2

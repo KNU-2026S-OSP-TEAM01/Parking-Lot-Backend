@@ -40,7 +40,6 @@ class LotOut(BaseModel):
     extra_fee_unit_minutes: int
     daily_max_fee: Optional[int]
     api_key: str
-    is_active: bool
     created_at: datetime
     updated_at: datetime
 

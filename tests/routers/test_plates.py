@@ -29,18 +29,6 @@ async def test_invalid_api_key_returns_401(client: AsyncClient):
     assert res.json()["detail"] == "invalid_api_key"
 
 
-async def test_inactive_lot_returns_401(client: AsyncClient, db: AsyncSession, lot):
-    lot.is_active = False
-    await db.flush()
-
-    res = await client.post(
-        "/api/v1/plates",
-        json={"plate": PLATE, "timestamp": TIMESTAMP},
-        headers=_headers(lot.api_key),
-    )
-    assert res.status_code == 401
-
-
 # ── 입차 ──────────────────────────────────────────────────────────────────────
 
 async def test_entry_returns_event_and_entered_at(client: AsyncClient, lot):
