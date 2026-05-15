@@ -10,7 +10,9 @@
 
 ```
 OSP_prj_pkl/
-├── parking_lot_server/   # Parking Lot Server (FastAPI)
+├── app/                  # Parking Lot Server (FastAPI)
+├── alembic/              # DB 마이그레이션
+├── tests/                # 테스트
 ├── hub_server/           # Hub Server (별도 git repo)
 └── docs/                 # 공용 설계 문서
     ├── plan/             # 구현 계획
@@ -35,8 +37,6 @@ OSP_prj_pkl/
 ### 빠른 시작
 
 ```bash
-cd parking_lot_server
-
 # 환경 설정
 python -m venv .venv
 source .venv/Scripts/activate  # Windows Git Bash
@@ -88,7 +88,6 @@ Swagger UI: `http://localhost:8000/docs`
 ### 테스트
 
 ```bash
-cd parking_lot_server
 docker compose up -d  # 테스트 DB(포트 5433) 포함
 source .venv/Scripts/activate
 python -m pytest

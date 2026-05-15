@@ -305,7 +305,6 @@ PLS와 Hub를 같은 머신에서 포트를 다르게 실행한다.
 ```bash
 # PLS (포트 8000, Public 모드)
 # PLS .env: MODE=public, HUB_URL=http://localhost:8001
-cd parking_lot_server
 docker compose up -d
 uvicorn app.main:app --port 8000 --reload
 

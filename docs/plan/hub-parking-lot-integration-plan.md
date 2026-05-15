@@ -312,7 +312,6 @@ for each lot where lot_type='parking_lot_server' AND is_active=true:
 ```bash
 # PLS (Public 모드, 포트 8000)
 # .env: MODE=public, HUB_URL=http://localhost:8001
-cd parking_lot_server
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Hub Server (포트 8001)
