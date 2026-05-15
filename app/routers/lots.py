@@ -15,7 +15,7 @@ from app.models.vehicle import Vehicle
 from app.schemas.log import LogOut
 from app.schemas.lot import LotCreate, LotOut, LotPatch
 from app.schemas.vehicle import VehicleOut
-from app.services.crypto import aes_decrypt, aes_encrypt, hmac_hash
+from app.services.crypto import aes_decrypt, hmac_hash
 from app.services.fee import calculate_fee
 
 router = APIRouter()
@@ -39,7 +39,6 @@ def _serialize_lot(lot: ParkingLot, *, mask_key: bool = True) -> LotOut:
         extra_fee_unit_minutes=lot.extra_fee_unit_minutes,
         daily_max_fee=lot.daily_max_fee,
         api_key=_mask_key(lot.api_key) if mask_key else lot.api_key,
-        is_active=lot.is_active,
         created_at=lot.created_at,
         updated_at=lot.updated_at,
     )
