@@ -134,3 +134,45 @@ async def test_delete_lot(client: AsyncClient, user_token, lot, db):
 async def test_delete_other_lot_returns_403(client: AsyncClient, other_token, lot):
     res = await client.delete(f"/api/v1/lots/{lot.id}", headers=_auth(other_token))
     assert res.status_code == 403
+
+
+async def test_delete_nonexistent_lot_returns_404(client: AsyncClient, user_token):
+    import uuid
+    res = await client.delete(f"/api/v1/lots/{uuid.uuid4()}", headers=_auth(user_token))
+    assert res.status_code == 404
+
+
+async def test_invalid_jwt_returns_401(client: AsyncClient, lot):
+    res = await client.get("/api/v1/lots", headers=_auth("invalid.jwt.token"))
+    assert res.status_code == 401
+
+
+async def test_patch_total_spaces_recalculates_available(
+    client: AsyncClient, user_token, lot, db
+):
+    """total_spaces 변경 시 available_spaces = new_total - parked 로 재계산되어야 한다."""
+    from app.models.vehicle import Vehicle
+    from app.services.crypto import aes_encrypt, hmac_hash
+    from datetime import datetime, timezone
+
+    # 차량 20대 주차
+    for i in range(20):
+        db.add(Vehicle(
+            parking_lot_id=lot.id,
+            plate_hash=hmac_hash(f"2{i}가0000"),
+            plate_enc=aes_encrypt(f"2{i}가0000"),
+            entered_at=datetime.now(timezone.utc),
+        ))
+    lot.available_spaces -= 20
+    await db.flush()
+
+    # total_spaces 100 → 50 (주차 중 20대, 잔여 30)
+    res = await client.patch(
+        f"/api/v1/lots/{lot.id}",
+        json={"total_spaces": 50},
+        headers=_auth(user_token),
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["total_spaces"] == 50
+    assert body["available_spaces"] == 30  # 50 - 20
