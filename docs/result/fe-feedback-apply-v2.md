@@ -89,7 +89,7 @@ services:
     # PLS와 Hub가 공유
 
   pls:
-    build: ./parking_lot_server
+    build: .
     environment:
       DATABASE_URL: postgresql+asyncpg://openpark:openpark@db/openpark
 

@@ -187,8 +187,6 @@ HTTP 409
 ### 서버 실행
 
 ```bash
-cd parking_lot_server
-
 # 1. 가상환경 설정 (최초 1회)
 python -m venv .venv
 source .venv/Scripts/activate   # Windows Git Bash
@@ -234,7 +232,6 @@ Authorization: Bearer {api_key}
 ### 자동화 테스트 실행
 
 ```bash
-cd parking_lot_server
 source .venv/Scripts/activate
 
 # Docker DB가 실행 중이어야 함 (테스트 전용 DB: 포트 5433)

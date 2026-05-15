@@ -16,7 +16,7 @@ Hub Server 연동(`/public/status`)은 이번 단계에서 제외하고, 추후 
 ## 프로젝트 구조
 
 ```
-parking_lot_server/
+OSP_prj_pkl/
 ├── app/
 │   ├── main.py
 │   ├── config.py               # 환경변수 (DB_URL, SECRET_KEY, AES_KEY, HMAC_KEY, MODE)
