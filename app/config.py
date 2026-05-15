@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     aes_key: str
     hmac_key: str
     enable_signup: bool = True      # false면 POST /api/v1/signup 비활성화
+    frontend_url: str = ""          # CORS 허용할 FE 출처. 빈 문자열이면 CORS 미들웨어 미등록
 
 
 settings = Settings()
