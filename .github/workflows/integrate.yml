@@ -1,0 +1,136 @@
+name: Backend Image Build & Push
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: parking-lot-backend-main
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/knu-2026s-osp-team01/parking-lot-backend
+  DEPLOY_REPO: KNU-2026S-OSP-TEAM01/Deploy
+  TARGET_ENV_FILE: tags/prod.versions
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set image metadata
+        id: meta
+        shell: bash
+        run: |
+          DATE_TAG=$(date -u +%Y%m%d)
+          CREATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          SHORT_SHA="${GITHUB_SHA::7}"
+          IMAGE_TAG="backend-${DATE_TAG}-${SHORT_SHA}"
+
+          echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "created_at=${CREATED_AT}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Show resolved values
+        run: |
+          echo "IMAGE=${{ env.IMAGE_NAME }}"
+          echo "TAG=${{ steps.meta.outputs.image_tag }}"
+          echo "TARGET_ENV_FILE=${{ env.TARGET_ENV_FILE }}"
+          echo "BRANCH=${{ github.ref_name }}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+          labels: |
+            org.opencontainers.image.title=parking-lot-backend
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created_at }}
+
+      - name: Checkout deploy repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DEPLOY_REPO }}
+          token: ${{ secrets.DEPLOY_REPO_PAT }}
+          path: deploy
+          ref: main
+          persist-credentials: true
+
+      - name: Update BACKEND_TAG in deploy repo
+        shell: bash
+        run: |
+          ENV_FILE="deploy/${{ env.TARGET_ENV_FILE }}"
+          NEW_TAG="${{ steps.meta.outputs.image_tag }}"
+
+          if [ ! -f "$ENV_FILE" ]; then
+            echo "File not found: $ENV_FILE"
+            exit 1
+          fi
+
+          python3 - <<PY
+          from pathlib import Path
+
+          env_file = Path("$ENV_FILE")
+          new_tag = "$NEW_TAG"
+
+          lines = env_file.read_text().splitlines()
+          updated = False
+          result = []
+
+          for line in lines:
+              if line.startswith("BACKEND_TAG="):
+                  result.append(f"BACKEND_TAG={new_tag}")
+                  updated = True
+              else:
+                  result.append(line)
+
+          if not updated:
+              result.append(f"BACKEND_TAG={new_tag}")
+
+          env_file.write_text("\\n".join(result) + "\\n")
+          PY
+
+          echo "Updated ${ENV_FILE}"
+
+      - name: Commit and push deploy repo changes
+        shell: bash
+        run: |
+          cd deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "${{ env.TARGET_ENV_FILE }}"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Deploy: 백엔드 (${{ steps.meta.outputs.image_tag }})"
+
+          git remote set-url origin https://x-access-token:${{ secrets.DEPLOY_REPO_PAT }}@github.com/KNU-2026S-OSP-TEAM01/Deploy.git
+
+          git push origin HEAD:main
