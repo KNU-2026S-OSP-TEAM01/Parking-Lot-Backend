@@ -1,7 +1,5 @@
 import uuid
-import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 LOT_PAYLOAD = {
     "name": "신규 주차장",

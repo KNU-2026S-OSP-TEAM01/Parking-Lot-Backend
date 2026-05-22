@@ -1,10 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.entry_exit_log import EntryExitLog
 from app.models.vehicle import Vehicle

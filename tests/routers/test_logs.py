@@ -64,7 +64,6 @@ async def test_logs_pagination(client: AsyncClient, user_token, lot, db):
 
 
 async def test_filter_logs_by_date_from(client: AsyncClient, user_token, lot, db):
-    from datetime import date, timedelta
 
     old_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
     new_ts = datetime(2026, 5, 1, tzinfo=timezone.utc)
