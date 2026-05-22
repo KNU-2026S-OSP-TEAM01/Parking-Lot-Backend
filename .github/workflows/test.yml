@@ -1,0 +1,50 @@
+name: Backend Code Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Run lint
+        run: |
+          source .venv/bin/activate
+          ruff check .
+          
+      - name: Start test database
+        run: |
+          docker compose up -d
+
+      - name: Wait for database
+        run: |
+          sleep 10
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest
+
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker compose down
