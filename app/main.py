@@ -6,10 +6,11 @@ from app.routers import auth, lots, plates
 
 app = FastAPI(title="OpenPark - Parking Lot Server")
 
-if settings.frontend_url:
+_origins = [url.strip() for url in settings.frontend_url.split(",") if url.strip()]
+if _origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_url],
+        allow_origins=_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
