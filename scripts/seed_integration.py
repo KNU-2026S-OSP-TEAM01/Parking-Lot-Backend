@@ -49,7 +49,7 @@ def main(base_url: str):
         if res.status_code == 201:
             print(f"  ✔ 계정 생성: {USER['username']}")
         elif res.status_code == 409:
-            print(f"  - 이미 존재하는 계정, 로그인으로 진행")
+            print("  - 이미 존재하는 계정, 로그인으로 진행")
         else:
             print(f"  ✘ 실패: {res.status_code} {res.text}")
             sys.exit(1)
@@ -65,7 +65,7 @@ def main(base_url: str):
             sys.exit(1)
         token = res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print(f"  ✔ 토큰 발급 완료")
+        print("  ✔ 토큰 발급 완료")
 
         # 3. 주차장 생성
         print("▶ 주차장 생성 중...")

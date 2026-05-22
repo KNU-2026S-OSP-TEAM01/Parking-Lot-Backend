@@ -4,10 +4,6 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
-from app.models.parking_lot import ParkingLot
-from app.models.user import User
-from app.models.vehicle import Vehicle
-from app.models.entry_exit_log import EntryExitLog
 
 config = context.config
 # asyncpg는 Alembic 동기 연결에서 사용 불가 → psycopg2로 교체
