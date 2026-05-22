@@ -2,13 +2,12 @@
 PLS 연동 테스트용 더미 데이터 주입 스크립트
 
 사용법:
-    python scripts/seed_integration.py [--base-url http://localhost:8000]
+    python scripts/seed_integration.py
 
 실행 전 PLS가 실행 중이어야 한다:
     docker compose up db app -d
     alembic upgrade head
 """
-import argparse
 import sys
 
 import httpx
@@ -50,7 +49,7 @@ def main(base_url: str):
         if res.status_code == 201:
             print(f"  ✔ 계정 생성: {USER['username']}")
         elif res.status_code == 409:
-            print(f"  - 이미 존재하는 계정, 로그인으로 진행")
+            print("  - 이미 존재하는 계정, 로그인으로 진행")
         else:
             print(f"  ✘ 실패: {res.status_code} {res.text}")
             sys.exit(1)
@@ -66,7 +65,7 @@ def main(base_url: str):
             sys.exit(1)
         token = res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print(f"  ✔ 토큰 발급 완료")
+        print("  ✔ 토큰 발급 완료")
 
         # 3. 주차장 생성
         print("▶ 주차장 생성 중...")
@@ -79,12 +78,8 @@ def main(base_url: str):
                 print(f"  ✘ 실패: {res.status_code} {res.text}")
                 sys.exit(1)
 
-        print("\n완료. Hub에서 확인:")
-        print("  curl http://localhost:8001/api/v1/lots")
+        print("\n완료. Hub 컨테이너 기동 후 연동을 확인하세요.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--base-url", default=DEFAULT_URL)
-    args = parser.parse_args()
-    main(args.base_url)
+    main(DEFAULT_URL)

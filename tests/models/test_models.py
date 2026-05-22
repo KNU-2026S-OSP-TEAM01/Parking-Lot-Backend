@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.database import Base
 from app.models.entry_exit_log import EntryExitLog
 from app.models.parking_lot import ParkingLot
 from app.models.user import User

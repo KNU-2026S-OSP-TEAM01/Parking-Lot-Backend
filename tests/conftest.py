@@ -12,8 +12,6 @@ from app.database import Base, get_db
 from app.main import app
 from app.models.parking_lot import ParkingLot
 from app.models.user import User
-from app.models.vehicle import Vehicle
-from app.models.entry_exit_log import EntryExitLog
 
 
 @pytest.fixture
