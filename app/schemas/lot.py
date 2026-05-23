@@ -39,6 +39,8 @@ class LotOut(BaseModel):
     extra_fee_per_unit: int
     extra_fee_unit_minutes: int
     daily_max_fee: Optional[int]
+    latitude: float
+    longitude: float
     api_key: str
     created_at: datetime
     updated_at: datetime

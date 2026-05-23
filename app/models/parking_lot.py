@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import CheckConstraint, DateTime, Double, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
@@ -12,7 +12,9 @@ class ParkingLot(Base):
     id:                     Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_user_id:          Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     name:                   Mapped[str]        = mapped_column(String(100), nullable=False)
-    address:                Mapped[str | None] = mapped_column(String(255))
+    address:                Mapped[str]        = mapped_column(String(255), nullable=False)
+    latitude:               Mapped[float]      = mapped_column(Double, nullable=False)
+    longitude:              Mapped[float]      = mapped_column(Double, nullable=False)
     total_spaces:           Mapped[int]        = mapped_column(Integer, nullable=False)
     available_spaces:       Mapped[int]        = mapped_column(Integer, nullable=False)
     base_fee:               Mapped[int]        = mapped_column(Integer, nullable=False, default=0)
