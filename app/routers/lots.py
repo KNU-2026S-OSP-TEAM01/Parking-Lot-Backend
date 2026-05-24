@@ -17,6 +17,7 @@ from app.schemas.lot import LotCreate, LotOut, LotPatch
 from app.schemas.vehicle import VehicleOut
 from app.services.crypto import aes_decrypt, hmac_hash
 from app.services.fee import calculate_fee
+from app.services.kakao import geocode
 
 router = APIRouter()
 
@@ -34,6 +35,8 @@ def _serialize_lot(lot: ParkingLot) -> LotOut:
         extra_fee_per_unit=lot.extra_fee_per_unit,
         extra_fee_unit_minutes=lot.extra_fee_unit_minutes,
         daily_max_fee=lot.daily_max_fee,
+        latitude=lot.latitude,
+        longitude=lot.longitude,
         api_key=lot.api_key,
         created_at=lot.created_at,
         updated_at=lot.updated_at,
@@ -48,11 +51,14 @@ async def create_lot(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> LotOut:
+    latitude, longitude = await geocode(body.address)
     lot = ParkingLot(
         **body.model_dump(),
         id=uuid.uuid4(),
         owner_user_id=uuid.UUID(current_user["sub"]),
         available_spaces=body.total_spaces,
+        latitude=latitude,
+        longitude=longitude,
         api_key=secrets.token_hex(32),
     )
     db.add(lot)
@@ -92,12 +98,14 @@ async def update_lot(
     lot = await get_owned_lot(str(lot_id), current_user, db)
     patch = body.model_dump(exclude_none=True)
 
+    if "address" in patch:
+        patch["latitude"], patch["longitude"] = await geocode(patch["address"])
+
     if "total_spaces" in patch:
         currently_parked = lot.total_spaces - lot.available_spaces
         new_total = patch["total_spaces"]
         if new_total < currently_parked:
             raise HTTPException(status_code=400, detail="invalid_total_spaces")
-        # available_spaces를 새 total 기준으로 재계산
         patch["available_spaces"] = new_total - currently_parked
 
     for field, value in patch.items():

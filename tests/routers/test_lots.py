@@ -1,14 +1,23 @@
 import uuid
+from unittest.mock import AsyncMock, patch
+
 from httpx import AsyncClient
 
 LOT_PAYLOAD = {
     "name": "신규 주차장",
+    "address": "서울시 강남구 테헤란로 1",
     "total_spaces": 50,
     "base_fee": 1000,
     "base_duration_minutes": 30,
     "extra_fee_per_unit": 200,
     "extra_fee_unit_minutes": 10,
 }
+
+_MOCK_GEOCODE = patch(
+    "app.routers.lots.geocode",
+    new_callable=AsyncMock,
+    return_value=(37.5665, 126.9780),
+)
 
 
 def _auth(token): return {"Authorization": f"Bearer {token}"}
@@ -17,16 +26,19 @@ def _auth(token): return {"Authorization": f"Bearer {token}"}
 # ── POST /api/v1/lots ─────────────────────────────────────────────────────────
 
 async def test_create_lot(client: AsyncClient, user_token):
-    res = await client.post("/api/v1/lots", json=LOT_PAYLOAD, headers=_auth(user_token))
+    with _MOCK_GEOCODE:
+        res = await client.post("/api/v1/lots", json=LOT_PAYLOAD, headers=_auth(user_token))
     assert res.status_code == 201
     body = res.json()
     assert body["name"] == "신규 주차장"
     assert body["available_spaces"] == 50
-    assert "..." not in body["api_key"]  # 최초 등록 시 원문 반환
+    assert body["latitude"] == 37.5665
+    assert body["longitude"] == 126.9780
 
 
 async def test_create_lot_sets_owner(client: AsyncClient, user, user_token):
-    res = await client.post("/api/v1/lots", json=LOT_PAYLOAD, headers=_auth(user_token))
+    with _MOCK_GEOCODE:
+        res = await client.post("/api/v1/lots", json=LOT_PAYLOAD, headers=_auth(user_token))
     assert res.json()["owner_user_id"] == str(user.id)
 
 
@@ -39,9 +51,11 @@ async def test_create_lot_requires_auth(client: AsyncClient):
 
 async def test_list_lots_returns_only_own(client: AsyncClient, user_token, lot, other_token, other_user, db):
     from app.models.parking_lot import ParkingLot
-    other_lot = ParkingLot(id=uuid.uuid4(), owner_user_id=other_user.id,
-                           name="타인 주차장", total_spaces=10, available_spaces=10,
-                           api_key=uuid.uuid4().hex)
+    other_lot = ParkingLot(
+        id=uuid.uuid4(), owner_user_id=other_user.id,
+        name="타인 주차장", address="부산시 해운대구 1", total_spaces=10, available_spaces=10,
+        latitude=35.1631, longitude=129.1639, api_key=uuid.uuid4().hex,
+    )
     db.add(other_lot)
     await db.flush()
 
@@ -52,10 +66,10 @@ async def test_list_lots_returns_only_own(client: AsyncClient, user_token, lot, 
     assert str(other_lot.id) not in ids
 
 
-async def test_list_lots_api_key_is_masked(client: AsyncClient, user_token, lot):
+async def test_list_lots_returns_full_api_key(client: AsyncClient, user_token, lot):
     res = await client.get("/api/v1/lots", headers=_auth(user_token))
     for item in res.json():
-        assert "..." in item["api_key"]
+        assert len(item["api_key"]) == 64
 
 
 # ── GET /api/v1/lots/{lot_id} ────────────────────────────────────────────────

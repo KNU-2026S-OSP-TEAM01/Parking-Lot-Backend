@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class LotCreate(BaseModel):
     name: str
-    address: Optional[str] = None
+    address: str
     total_spaces: int = Field(gt=0)
     base_fee: int = 0
     base_duration_minutes: int = 0
@@ -31,7 +31,7 @@ class LotOut(BaseModel):
     id: uuid.UUID
     owner_user_id: uuid.UUID
     name: str
-    address: Optional[str]
+    address: str
     total_spaces: int
     available_spaces: int
     base_fee: int
@@ -39,6 +39,8 @@ class LotOut(BaseModel):
     extra_fee_per_unit: int
     extra_fee_unit_minutes: int
     daily_max_fee: Optional[int]
+    latitude: float
+    longitude: float
     api_key: str
     created_at: datetime
     updated_at: datetime

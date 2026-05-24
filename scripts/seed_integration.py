@@ -19,23 +19,13 @@ USER = {"username": "testowner", "email": "testowner@openpark.local", "password"
 LOTS = [
     {
         "name": "북문 주차장",
-        "address": "경북대학교 북문 앞",
+        "address": "대구광역시 북구 대학로 80",
         "total_spaces": 100,
         "base_fee": 1000,
         "base_duration_minutes": 30,
         "extra_fee_per_unit": 200,
         "extra_fee_unit_minutes": 10,
         "daily_max_fee": 10000,
-    },
-    {
-        "name": "남문 주차장",
-        "address": "경북대학교 남문 앞",
-        "total_spaces": 50,
-        "base_fee": 500,
-        "base_duration_minutes": 60,
-        "extra_fee_per_unit": 100,
-        "extra_fee_unit_minutes": 10,
-        "daily_max_fee": None,
     },
 ]
 

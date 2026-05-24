@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -78,9 +79,12 @@ async def lot(db, user):
         id=uuid.uuid4(),
         owner_user_id=user.id,
         name="테스트 주차장",
+        address="서울시 강남구 테헤란로 1",
         total_spaces=100,
         available_spaces=100,
-        api_key=uuid.uuid4().hex,
+        latitude=37.5665,
+        longitude=126.9780,
+        api_key=secrets.token_hex(32),
     )
     db.add(parking_lot)
     await db.flush()
