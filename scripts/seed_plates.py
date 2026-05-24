@@ -45,7 +45,7 @@ def send_plate(client: httpx.Client, api_key: str, plate: str, ts: datetime) -> 
 
 
 def main(base_url: str, api_key: str):
-    with httpx.Client(base_url=base_url, timeout=10) as client:
+    with httpx.Client(base_url=base_url, timeout=10, headers={"Connection": "close"}) as client:
         print(f"▶ 입출차 데이터 주입 (api_key={api_key[:8]}...)\n")
 
         for plate, entry_offset, exit_offset in SCENARIOS:

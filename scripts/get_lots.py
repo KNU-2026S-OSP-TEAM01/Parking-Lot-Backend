@@ -15,7 +15,7 @@ USER = {"username": "testowner", "password": "testpass123"}
 
 
 def main(base_url: str, lot_id: str | None = None):
-    with httpx.Client(base_url=base_url, timeout=10) as client:
+    with httpx.Client(base_url=base_url, timeout=10, headers={"Connection": "close"}) as client:
 
         # 1. 로그인
         print("▶ 로그인 중...")
