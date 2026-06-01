@@ -68,8 +68,11 @@ def _make_lot(user_id, **kwargs) -> ParkingLot:
         id=uuid.uuid4(),
         owner_user_id=user_id,
         name="테스트 주차장",
+        address="서울시 강남구 테헤란로 1",
         total_spaces=100,
         available_spaces=100,
+        latitude=37.5665,
+        longitude=126.9780,
         api_key=uuid.uuid4().hex,
     )
     return ParkingLot(**{**defaults, **kwargs})
